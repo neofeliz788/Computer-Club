@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Issues: Дефект #9 - Отсутствие rate limiting на API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f6f8fa;
+            color: #24292e;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #24292e 0%, #2c3136 100%);
+            color: white;
+            padding: 25px 30px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .issue-title h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .issue-id {
+            font-size: 20px;
+            font-weight: 600;
+            color: #79b8ff;
+            background-color: rgba(121, 184, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        .issue-meta {
+            margin-top: 15px;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        
+        .security-badge {
+            display: inline-block;
+            background-color: #b60205;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        .issue-body {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eaecef;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #24292e;
+            display: flex;
+            align-items: center;
+        }
+        
+        h2 i {
+            margin-right: 10px;
+            color: #0366d6;
+        }
+        
+        p, li {
+            margin-bottom: 10px;
+            color: #444d56;
+        }
+        
+        ul, ol {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .label {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .label-security {
+            background-color: #ff9c1a;
+            color: #24292e;
+        }
+        
+        .label-performance {
+            background-color: #0075ca;
+            color: white;
+        }
+        
+        .label-api {
+            background-color: #0366d6;
+            color: white;
+        }
+        
+        .label-dos-protection {
+            background-color: #b60205;
+            color: white;
+        }
+        
+        .result-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .expected-result {
+            background-color: #e6ffed;
+            border-left: 4px solid #2ea44f;
+        }
+        
+        .actual-result {
+            background-color: #ffeef0;
+            border-left: 4px solid #d73a49;
+        }
+        
+        .result-box h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-box h3 i {
+            margin-right: 8px;
+        }
+        
+        .steps-list li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .steps-list li:before {
+            content: counter(step);
+            counter-increment: step;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #0366d6;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .steps-list {
+            counter-reset: step;
+        }
+        
+        .dos-warning {
+            background-color: #fff5b1;
+            border-left: 4px solid #ff9c1a;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .dos-warning h3 {
+            color: #b60205;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .dos-warning h3 i {
+            margin-right: 10px;
+        }
+        
+        .attack-demo {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f6f8fa;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+        }
+        
+        .demo-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .demo-box {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .demo-title i {
+            margin-right: 8px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #0366d6;
+        }
+        
+        .metric-card.critical {
+            border-left-color: #b60205;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: #6a737d;
+        }
+        
+        .code-block {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        .attack-script {
+            background-color: #ffeef0;
+            border-left: 4px solid #d73a49;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .attack-script h3 {
+            color: #b60205;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .attack-script h3 i {
+            margin-right: 10px;
+        }
+        
+        .rate-limit-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .rate-limit-table th {
+            background-color: #f6f8fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e1e4e8;
+        }
+        
+        .rate-limit-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eaecef;
+        }
+        
+        .rate-limit-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .status-429 {
+            background-color: #fff5b1;
+            font-weight: 600;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #6a737d;
+            font-size: 14px;
+        }
+        
+        .github-icon {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                padding: 20px;
+            }
+            
+            .issue-title h1 {
+                font-size: 20px;
+            }
+            
+            .issue-body {
+                padding: 20px;
+            }
+            
+            .demo-box {
+                min-width: 100%;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="issue-header">
+                <div class="issue-title">
+                    <h1>Отсутствие rate limiting на API-методах<span class="security-badge">Угроза безопасности</span></h1>
+                    <div class="issue-meta">
+                        <span><i class="fas fa-exclamation-circle"></i> Дефект заведен в GitHub Issues</span>
+                    </div>
+                </div>
+                <div class="issue-id">Issue #9</div>
+            </div>
+        </header>
+        
+        <div class="issue-body">
+            <div class="dos-warning">
+                <h3><i class="fas fa-shield-alt"></i> УГРОЗА БЕЗОПАСНОСТИ: DDoS АТАКА</h3>
+                <p><strong>Отсутствие rate limiting делает систему уязвимой к DDoS-атакам.</strong> Злоумышленник может легко исчерпать ресурсы системы, отправляя большое количество запросов к критическим endpoint'ам.</p>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-align-left"></i> Описание</h2>
+                <p>Критические API-методы (авторизация, создание брони) не имеют ограничений по частоте запросов. Это позволяет одному клиенту отправлять неограниченное количество запросов в секунду, что может привести к отказу в обслуживании для легитимных пользователей.</p>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-list-ol"></i> Шаги воспроизведения</h2>
+                <ol class="steps-list">
+                    <li>Написать скрипт на Python/Node.js/Bash, который отправляет 1000 запросов в секунду на endpoint авторизации (/api/auth/login).</li>
+                    <li>Запустить скрипт на 1 минуту (60 000 запросов).</li>
+                    <li>Мониторить метрики системы во время атаки:
+                        <ul>
+                            <li>Загрузка CPU сервера</li>
+                            <li>Использование памяти</li>
+                            <li>Количество активных соединений к БД</li>
+                            <li>Время ответа для легитимных пользователей</li>
+                        </ul>
+                    </li>
+                    <li>Попытаться использовать систему как обычный пользователь во время атаки.</li>
+                    <li>Повторить тест для endpoint'а создания брони (/api/bookings).</li>
+                </ol>
+                
+                <div class="attack-script">
+                    <h3><i class="fas fa-code"></i> Пример атакующего скрипта (Python)</h3>
+                    <div class="code-block">
+import threading
+import requests
+import time
+
+def attack_endpoint(url, duration=60):
+    end_time = time.time() + duration
+    request_count = 0
+    
+    while time.time() < end_time:
+        try:
+            # Отправляем запрос на аутентификацию
+            response = requests.post(url, json={
+                'username': 'test',
+                'password': 'test123'
+            }, timeout=5)
+            request_count += 1
+            
+            # Каждые 100 запросов выводим статистику
+            if request_count % 100 == 0:
+                print(f"Отправлено {request_count} запросов")
+                
+        except Exception as e:
+            print(f"Ошибка: {e}")
+            continue
+    
+    print(f"Всего отправлено {request_count} запросов за {duration} секунд")
+
+# Запускаем атаку в 10 потоках
+url = "https://api.example.com/auth/login"
+threads = []
+for i in range(10):
+    thread = threading.Thread(target=attack_endpoint, args=(url, 60))
+    threads.append(thread)
+    thread.start()
+
+for thread in threads:
+    thread.join()
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card critical">
+                        <div class="metric-value">100%</div>
+                        <div class="metric-label">Загрузка CPU сервера</div>
+                    </div>
+                    <div class="metric-card critical">
+                        <div class="metric-value">95%</div>
+                        <div class="metric-label">Использование памяти</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">500+</div>
+                        <div class="metric-label">Активных соединений с БД</div>
+                    </div>
+                    <div class="metric-card critical">
+                        <div class="metric-value">10+ сек</div>
+                        <div class="metric-label">Время ответа для легитимных пользователей</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="attack-demo">
+                <h3><i class="fas fa-bomb"></i> Последствия атаки</h3>
+                
+                <div class="demo-container">
+                    <div class="demo-box">
+                        <div class="demo-title"><i class="fas fa-server"></i> Высокая нагрузка на CPU</div>
+                        <p>Сервер пытается обработать все 1000 запросов в секунду, что приводит к 100% загрузке CPU. Это замедляет обработку всех запросов, включая легитимные.</p>
+                    </div>
+                    
+                    <div class="demo-box">
+                        <div class="demo-title"><i class="fas fa-memory"></i> Исчерпание памяти</div>
+                        <p>Каждый запрос создает объекты в памяти (сессии, соединения с БД, объекты запросов). При высокой нагрузке память быстро заполняется, что может привести к падению приложения.</p>
+                    </div>
+                    
+                    <div class="demo-box">
+                        <div class="demo-title"><i class="fas fa-user-times"></i> Отказ в обслуживании</div>
+                        <p>Легитимные пользователи не могут использовать систему из-за исчерпания ресурсов. Время ответа возрастает с миллисекунд до десятков секунд.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-bullseye"></i> Ожидаемый результат</h2>
+                <div class="result-box expected-result">
+                    <h3><i class="fas fa-check-circle"></i> Ожидаемый результат</h3>
+                    <p>После 10-20 запросов в секунду система должна возвращать HTTP статус 429 Too Many Requests. Легитимные пользователи должны иметь возможность работать с системой даже во время атаки.</p>
+                </div>
+                
+                <h2 style="margin-top: 25px;"><i class="fas fa-exclamation-triangle"></i> Фактический результат</h2>
+                <div class="result-box actual-result">
+                    <h3><i class="fas fa-times-circle"></i> Фактический результат</h3>
+                    <p>Система пытается обработать все запросы, что приводит к:</p>
+                    <ul>
+                        <li><strong>Высокой нагрузке на CPU (до 100%)</strong></li>
+                        <li><strong>Исчерпанию памяти</strong></li>
+                        <li><strong>Отказу в обслуживании легитимных пользователей</strong></li>
+                        <li><strong>Возможности DDoS-атаки</strong></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-tags"></i> Метки (Labels)</h2>
+                <div class="labels">
+                    <span class="label label-security"><i class="fas fa-shield-alt"></i> security</span>
+                    <span class="label label-performance"><i class="fas fa-tachometer-alt"></i> performance</span>
+                    <span class="label label-api"><i class="fas fa-network-wired"></i> api</span>
+                    <span class="label label-dos-protection"><i class="fas fa-ban"></i> dos-protection</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-lightbulb"></i> Решения</h2>
+                
+                <table class="rate-limit-table">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Рекомендуемый лимит</th>
+                            <th>Период</th>
+                            <th>HTTP статус</th>
+                            <th>Заголовки ответа</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>/api/auth/*</strong></td>
+                            <td>10 запросов</td>
+                            <td>1 минута</td>
+                            <td class="status-429">429 Too Many Requests</td>
+                            <td>Retry-After: 60</td>
+                        </tr>
+                        <tr>
+                            <td><strong>/api/bookings (POST)</strong></td>
+                            <td>5 запросов</td>
+                            <td>1 минута</td>
+                            <td class="status-429">429</td>
+                            <td>Retry-After: 60</td>
+                        </tr>
+                        <tr>
+                            <td><strong>/api/bookings (GET)</strong></td>
+                            <td>60 запросов</td>
+                            <td>1 минута</td>
+                            <td class="status-429">429</td>
+                            <td>Retry-After: 1</td>
+                        </tr>
+                        <tr>
+                            <td><strong>/api/public/*</strong></td>
+                            <td>100 запросов</td>
+                            <td>1 минута</td>
+                            <td class="status-429">429</td>
+                            <td>Retry-After: 1</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="code-block">
+                    <p><strong>Решение 1: ASP.NET Core Middleware с IMemoryCache</strong></p>
+                    <pre>
+public class RateLimitMiddleware {
+    private readonly RequestDelegate _next;
+    private readonly IMemoryCache _cache;
+    
+    public RateLimitMiddleware(RequestDelegate next, IMemoryCache cache) {
+        _next = next;
+        _cache = cache;
+    }
+    
+    public async Task InvokeAsync(HttpContext context) {
+        var endpoint = context.Request.Path;
+        var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var clientKey = $"{clientIp}:{endpoint}";
+        
+        // Получаем или создаем счетчик запросов
+        var requestCounter = _cache.GetOrCreate(clientKey, entry => {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            return new RequestCounter();
+        });
+        
+        // Проверяем лимит
+        if (requestCounter.Count >= GetRateLimit(endpoint)) {
+            context.Response.StatusCode = 429; // Too Many Requests
+            context.Response.Headers.Add("Retry-After", "60");
+            await context.Response.WriteAsync("Rate limit exceeded. Please try again later.");
+            return;
+        }
+        
+        // Увеличиваем счетчик
+        requestCounter.Count++;
+        _cache.Set(clientKey, requestCounter);
+        
+        await _next(context);
+    }
+    
+    private int GetRateLimit(string endpoint) {
+        return endpoint switch {
+            string s when s.Contains("/auth/") => 10,
+            string s when s.Contains("/bookings") && context.Request.Method == "POST" => 5,
+            _ => 100
+        };
+    }
+    
+    private class RequestCounter {
+        public int Count { get; set; }
+    }
+}
+
+// В Startup.cs
+app.UseMiddleware&lt;RateLimitMiddleware&gt;();
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 2: Использование библиотеки AspNetCoreRateLimit</strong></p>
+                    <pre>
+// Startup.cs
+services.AddMemoryCache();
+services.Configure&lt;IpRateLimitOptions&gt;(options => {
+    options.GeneralRules = new List&lt;RateLimitRule&gt; {
+        new RateLimitRule {
+            Endpoint = "*",
+            Period = "1m",
+            Limit = 100
+        },
+        new RateLimitRule {
+            Endpoint = "*:/api/auth/*",
+            Period = "1m",
+            Limit = 10
+        },
+        new RateLimitRule {
+            Endpoint = "POST:/api/bookings",
+            Period = "1m",
+            Limit = 5
+        }
+    };
+    options.QuotaExceededResponse = new QuotaExceededResponse {
+        ContentType = "application/json",
+        Content = "{{\"error\":\"Rate limit exceeded\"}}",
+        StatusCode = 429
+    };
+});
+
+services.AddSingleton&lt;IRateLimitCounterStore, MemoryCacheRateLimitCounterStore&gt;();
+services.AddSingleton&lt;IIpPolicyStore, MemoryCacheIpPolicyStore&gt;();
+services.AddSingleton&lt;IRateLimitConfiguration, RateLimitConfiguration&gt;();
+
+// В Configure()
+app.UseIpRateLimiting();
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 3: Распределенный rate limiting с Redis</strong></p>
+                    <pre>
+public class DistributedRateLimiter {
+    private readonly IConnectionMultiplexer _redis;
+    
+    public DistributedRateLimiter(IConnectionMultiplexer redis) {
+        _redis = redis;
+    }
+    
+    public async Task&lt;bool&gt; IsAllowedAsync(string key, int limit, TimeSpan period) {
+        var db = _redis.GetDatabase();
+        var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var windowKey = $"{key}:{currentTime / (int)period.TotalSeconds}";
+        
+        // Используем Redis INCR с TTL
+        var current = await db.StringIncrementAsync(windowKey);
+        if (current == 1) {
+            await db.KeyExpireAsync(windowKey, period);
+        }
+        
+        return current <= limit;
+    }
+}
+
+// Использование
+public class RateLimitedController : ControllerBase {
+    private readonly DistributedRateLimiter _rateLimiter;
+    
+    [HttpPost("auth/login")]
+    public async Task&lt;IActionResult&gt; Login(LoginRequest request) {
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var key = $"rate_limit:{clientIp}:login";
+        
+        if (!await _rateLimiter.IsAllowedAsync(key, 10, TimeSpan.FromMinutes(1))) {
+            Response.Headers.Add("Retry-After", "60");
+            return StatusCode(429, new { error = "Too many login attempts" });
+        }
+        
+        // Логика аутентификации
+        return Ok(new { token = "..." });
+    }
+}
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 4: WAF или API Gateway уровень</strong></p>
+                    <pre>
+# Пример конфигурации NGINX как API Gateway
+http {
+    limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+    limit_req_zone $binary_remote_addr zone=bookings:10m rate=5r/m;
+    
+    server {
+        listen 80;
+        
+        location /api/auth/ {
+            limit_req zone=auth burst=5 nodelay;
+            limit_req_status 429;
+            proxy_pass http://backend:5000;
+        }
+        
+        location /api/bookings {
+            limit_req zone=bookings burst=3 nodelay;
+            limit_req_status 429;
+            proxy_pass http://backend:5000;
+        }
+        
+        location / {
+            proxy_pass http://backend:5000;
+        }
+    }
+}
+
+# Cloudflare Rate Limiting Rules
+# 1. Create rule for auth endpoints
+# Action: Block
+# Expression: (http.request.uri.path contains "/api/auth/")
+# Requests: 10 per minute
+# Duration: 1 minute
+
+# 2. Create rule for booking creation
+# Action: Block
+# Expression: (http.request.uri.path contains "/api/bookings" and http.request.method == "POST")
+# Requests: 5 per minute
+# Duration: 1 minute
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 5: Адаптивный rate limiting</strong></p>
+                    <pre>
+public class AdaptiveRateLimiter {
+    private readonly ConcurrentDictionary&lt;string, ClientStats&gt; _stats = new();
+    
+    public async Task&lt;RateLimitResult&gt; CheckLimitAsync(string clientId, string endpoint) {
+        var stats = _stats.GetOrAdd($"{clientId}:{endpoint}", 
+            key => new ClientStats());
+        
+        // Анализ паттерна запросов
+        if (stats.IsSuspiciousPattern()) {
+            // Ужегительный лимит для подозрительных клиентов
+            return new RateLimitResult {
+                IsAllowed = stats.RequestsLastMinute < 2,
+                RetryAfterSeconds = 120
+            };
+        }
+        
+        // Нормальный лимит
+        var limit = GetDefaultLimit(endpoint);
+        return new RateLimitResult {
+            IsAllowed = stats.RequestsLastMinute < limit,
+            RetryAfterSeconds = 60
+        };
+    }
+    
+    private bool IsSuspiciousPattern(ClientStats stats) {
+        // Обнаружение паттернов атаки
+        return stats.RequestsLastSecond > 50 || 
+               stats.ConsecutiveFailures > 10 ||
+               stats.TotalRequestsToday > 1000;
+    }
+}
+
+// Мониторинг и алертинг
+services.AddHealthChecks()
+    .AddCheck&lt;RateLimitHealthCheck&gt;("rate_limit")
+    .AddDbContextCheck&lt;ApplicationDbContext&gt;();
+
+// Настройка алертов при превышении лимитов
+public class RateLimitAlertService : BackgroundService {
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
+        while (!stoppingToken.IsCancellationRequested) {
+            var exceededLimits = await GetExceededRateLimitsAsync();
+            if (exceededLimits.Any()) {
+                await SendAlertAsync($"Rate limits exceeded: {string.Join(", ", exceededLimits)}");
+            }
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        }
+    }
+}
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p><i class="fab fa-github github-icon"></i> Дефект заведен в GitHub Issues | Шаблон отображения дефектов</p>
+    </footer>
+</body>
+</html>
