@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Issues: Дефект #1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f6f8fa;
+            color: #24292e;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #24292e 0%, #2c3136 100%);
+            color: white;
+            padding: 25px 30px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .issue-title h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .issue-id {
+            font-size: 20px;
+            font-weight: 600;
+            color: #79b8ff;
+            background-color: rgba(121, 184, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        .issue-meta {
+            margin-top: 15px;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        
+        .issue-body {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eaecef;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #24292e;
+            display: flex;
+            align-items: center;
+        }
+        
+        h2 i {
+            margin-right: 10px;
+            color: #0366d6;
+        }
+        
+        p, li {
+            margin-bottom: 10px;
+            color: #444d56;
+        }
+        
+        ul, ol {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .label {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .label-bug {
+            background-color: #d73a49;
+            color: white;
+        }
+        
+        .label-priority-high {
+            background-color: #b60205;
+            color: white;
+        }
+        
+        .label-database {
+            background-color: #0052cc;
+            color: white;
+        }
+        
+        .result-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .expected-result {
+            background-color: #e6ffed;
+            border-left: 4px solid #2ea44f;
+        }
+        
+        .actual-result {
+            background-color: #ffeef0;
+            border-left: 4px solid #d73a49;
+        }
+        
+        .result-box h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-box h3 i {
+            margin-right: 8px;
+        }
+        
+        .steps-list li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .steps-list li:before {
+            content: counter(step);
+            counter-increment: step;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #0366d6;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .steps-list {
+            counter-reset: step;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #6a737d;
+            font-size: 14px;
+        }
+        
+        .github-icon {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                padding: 20px;
+            }
+            
+            .issue-title h1 {
+                font-size: 20px;
+            }
+            
+            .issue-body {
+                padding: 20px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="issue-header">
+                <div class="issue-title">
+                    <h1>Конфликт одновременного бронирования</h1>
+                    <div class="issue-meta">
+                        <span><i class="fas fa-exclamation-circle"></i> Дефект заведен в GitHub Issues</span>
+                    </div>
+                </div>
+                <div class="issue-id">Issue #1</div>
+            </div>
+        </header>
+        
+        <div class="issue-body">
+            <div class="section">
+                <h2><i class="fas fa-align-left"></i> Описание</h2>
+                <p>При одновременной попытке бронирования одного компьютера двумя клиентами система позволяет создать две активные брони. Это критическая ошибка, которая может привести к конфликтам между пользователями и некорректной работе системы бронирования.</p>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-list-ol"></i> Шаги воспроизведения</h2>
+                <ol class="steps-list">
+                    <li>Открыть два разных браузера (например, Chrome и Firefox) или две приватные вкладки.</li>
+                    <li>В обоих браузерах открыть систему бронирования компьютеров.</li>
+                    <li>В каждом браузере выбрать один и тот же компьютер на одно и то же время.</li>
+                    <li>Нажать кнопку "Забронировать" практически одновременно в обоих браузерах.</li>
+                    <li>Проверить результат бронирования в административной панели или базе данных.</li>
+                </ol>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-bullseye"></i> Ожидаемый результат</h2>
+                <div class="result-box expected-result">
+                    <h3><i class="fas fa-check-circle"></i> Ожидаемый результат</h3>
+                    <p>Только одна бронь должна быть создана. Система должна предотвращать конфликты бронирования через механизм блокировок или проверок в реальном времени.</p>
+                </div>
+                
+                <h2 style="margin-top: 25px;"><i class="fas fa-exclamation-triangle"></i> Фактический результат</h2>
+                <div class="result-box actual-result">
+                    <h3><i class="fas fa-times-circle"></i> Фактический результат</h3>
+                    <p>Создаются две активные брони на один компьютер в одно и то же время. Это указывает на отсутствие корректной обработки конкурентных запросов.</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-tags"></i> Метки (Labels)</h2>
+                <div class="labels">
+                    <span class="label label-bug"><i class="fas fa-bug"></i> bug</span>
+                    <span class="label label-priority-high"><i class="fas fa-exclamation"></i> priority-high</span>
+                    <span class="label label-database"><i class="fas fa-database"></i> database</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-lightbulb"></i> Рекомендации по исправлению</h2>
+                <ul>
+                    <li>Реализовать механизм оптимистичных или пессимистичных блокировок на уровне базы данных.</li>
+                    <li>Добавить проверку наличия активной брони перед созданием новой в рамках транзакции.</li>
+                    <li>Внедрить очередь запросов на бронирование для обработки конкурентных попыток.</li>
+                    <li>Добавить индикацию пользователю, что компьютер уже забронирован, если попытка бронирования не удалась.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p><i class="fab fa-github github-icon"></i> Дефект заведен в GitHub Issues | Шаблон отображения дефектов</p>
+    </footer>
+</body>
+</html>
