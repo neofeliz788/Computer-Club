@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Issues: Дефект #8 - Неатомарность отмены бронирования</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f6f8fa;
+            color: #24292e;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #24292e 0%, #2c3136 100%);
+            color: white;
+            padding: 25px 30px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .issue-title h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .issue-id {
+            font-size: 20px;
+            font-weight: 600;
+            color: #79b8ff;
+            background-color: rgba(121, 184, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        .issue-meta {
+            margin-top: 15px;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        
+        .critical-badge {
+            display: inline-block;
+            background-color: #b60205;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        .issue-body {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eaecef;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #24292e;
+            display: flex;
+            align-items: center;
+        }
+        
+        h2 i {
+            margin-right: 10px;
+            color: #0366d6;
+        }
+        
+        p, li {
+            margin-bottom: 10px;
+            color: #444d56;
+        }
+        
+        ul, ol {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .label {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .label-bug {
+            background-color: #d73a49;
+            color: white;
+        }
+        
+        .label-transaction {
+            background-color: #0052cc;
+            color: white;
+        }
+        
+        .label-consistency {
+            background-color: #0366d6;
+            color: white;
+        }
+        
+        .label-critical {
+            background-color: #b60205;
+            color: white;
+        }
+        
+        .result-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .expected-result {
+            background-color: #e6ffed;
+            border-left: 4px solid #2ea44f;
+        }
+        
+        .actual-result {
+            background-color: #ffeef0;
+            border-left: 4px solid #d73a49;
+        }
+        
+        .result-box h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-box h3 i {
+            margin-right: 8px;
+        }
+        
+        .steps-list li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .steps-list li:before {
+            content: counter(step);
+            counter-increment: step;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #0366d6;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .steps-list {
+            counter-reset: step;
+        }
+        
+        .atomicity-demo {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f6f8fa;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+        }
+        
+        .demo-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .demo-box {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .demo-title i {
+            margin-right: 8px;
+        }
+        
+        .state-diagram {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .state-box {
+            display: inline-block;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            min-width: 200px;
+        }
+        
+        .state-success {
+            background-color: #e6ffed;
+            border: 2px solid #2ea44f;
+        }
+        
+        .state-failure {
+            background-color: #ffeef0;
+            border: 2px dashed #d73a49;
+        }
+        
+        .state-inconsistent {
+            background-color: #fff5b1;
+            border: 2px solid #ff9c1a;
+        }
+        
+        .arrow {
+            font-size: 24px;
+            color: #0366d6;
+            margin: 0 10px;
+        }
+        
+        .code-block {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        .code-danger {
+            color: #d73a49;
+            font-weight: bold;
+        }
+        
+        .code-safe {
+            color: #2ea44f;
+            font-weight: bold;
+        }
+        
+        .business-impact {
+            background-color: #ffeef0;
+            border-left: 4px solid #d73a49;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .business-impact h3 {
+            color: #b60205;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .business-impact h3 i {
+            margin-right: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #6a737d;
+            font-size: 14px;
+        }
+        
+        .github-icon {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                padding: 20px;
+            }
+            
+            .issue-title h1 {
+                font-size: 20px;
+            }
+            
+            .issue-body {
+                padding: 20px;
+            }
+            
+            .demo-box {
+                min-width: 100%;
+            }
+            
+            .state-box {
+                min-width: 150px;
+                font-size: 14px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="issue-header">
+                <div class="issue-title">
+                    <h1>Неатомарность операции отмены бронирования<span class="critical-badge">Critical</span></h1>
+                    <div class="issue-meta">
+                        <span><i class="fas fa-exclamation-circle"></i> Дефект заведен в GitHub Issues</span>
+                    </div>
+                </div>
+                <div class="issue-id">Issue #8</div>
+            </div>
+        </header>
+        
+        <div class="issue-body">
+            <div class="section">
+                <h2><i class="fas fa-align-left"></i> Описание</h2>
+                <p>При отмене бронирования операция обновления статуса компьютера и создание записи об отмене выполняются не в одной транзакции. Это может привести к несогласованному состоянию данных в случае сбоев.</p>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-list-ol"></i> Шаги воспроизведения</h2>
+                <ol class="steps-list">
+                    <li>Создать бронирование компьютера на определенное время.</li>
+                    <li>Инициировать операцию отмены бронирования.</li>
+                    <li>Во время выполнения операции вызвать искусственный сбой сети или базы данных сразу после обновления статуса компьютера, но до создания записи об отмене.</li>
+                    <li>Проверить состояние системы после восстановления работы.</li>
+                    <li>Повторить сценарий с сбоем на разных этапах операции.</li>
+                </ol>
+                
+                <div class="atomicity-demo">
+                    <h3><i class="fas fa-sitemap"></i> Диаграмма выполнения операции отмены</h3>
+                    
+                    <div class="state-diagram">
+                        <div class="state-box state-success">
+                            Начальное состояние<br>
+                            Компьютер: занят<br>
+                            Отмена: не создана
+                        </div>
+                        
+                        <div class="arrow">→</div>
+                        
+                        <div class="state-box state-success">
+                            1. Обновление статуса компьютера<br>
+                            UPDATE Computers SET Status = 'available'
+                        </div>
+                        
+                        <div class="arrow">→</div>
+                        
+                        <div class="state-box state-failure">
+                            <i class="fas fa-exclamation-triangle"></i><br>
+                            Сбой сети / БД
+                        </div>
+                        
+                        <div class="arrow">→</div>
+                        
+                        <div class="state-box state-inconsistent">
+                            Конечное состояние<br>
+                            Компьютер: свободен<br>
+                            Отмена: не создана<br>
+                            <strong>НЕСОГЛАСОВАННОСТЬ!</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="business-impact">
+                <h3><i class="fas fa-chart-line"></i> Бизнес-последствия</h3>
+                <p><strong>Расхождение в финансовой отчетности.</strong> Система считает компьютер свободным (можно забронировать снова), но не имеет записи об отмене первоначальной брони, что приводит к:</p>
+                <ul>
+                    <li>Некорректному учету доходов (отмена не учитывается)</li>
+                    <li>Возможности двойного бронирования одного компьютера</li>
+                    <li>Ошибкам в аналитических отчетах</li>
+                    <li>Проблемам с аудитом и соответствием требованиям</li>
+                    <li>Финансовым потерям при неправильном учете</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-bullseye"></i> Ожидаемый результат</h2>
+                <div class="result-box expected-result">
+                    <h3><i class="fas fa-check-circle"></i> Ожидаемый результат</h3>
+                    <p>Либо все изменения (обновление статуса компьютера и создание записи об отмене) успешно применяются, либо все изменения откатываются. Система должна гарантировать атомарность операции.</p>
+                </div>
+                
+                <h2 style="margin-top: 25px;"><i class="fas fa-exclamation-triangle"></i> Фактический результат</h2>
+                <div class="result-box actual-result">
+                    <h3><i class="fas fa-times-circle"></i> Фактический результат</h3>
+                    <p>Компьютер помечен как свободный (статус обновлен), но запись об отмене бронирования не создана. Система находится в несогласованном состоянии.</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-tags"></i> Метки (Labels)</h2>
+                <div class="labels">
+                    <span class="label label-bug"><i class="fas fa-bug"></i> bug</span>
+                    <span class="label label-transaction"><i class="fas fa-exchange-alt"></i> transaction</span>
+                    <span class="label label-consistency"><i class="fas fa-balance-scale"></i> consistency</span>
+                    <span class="label label-critical"><i class="fas fa-skull-crossbones"></i> critical</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-lightbulb"></i> Решения</h2>
+                
+                <div class="code-block">
+                    <p><strong>Уязвимый код (без транзакции):</strong></p>
+                    <pre>
+public void CancelBooking(int bookingId) {
+    // 1. Обновление статуса компьютера (отдельная операция)
+    using (var connection1 = new SqlConnection(connectionString)) {
+        connection1.Open();
+        var updateComputerCmd = new SqlCommand(
+            "UPDATE Computers SET Status = 'available' WHERE Id = @computerId", 
+            connection1);
+        updateComputerCmd.Parameters.AddWithValue("@computerId", GetComputerId(bookingId));
+        updateComputerCmd.ExecuteNonQuery();
+        <span class="code-danger">// Если здесь произойдет сбой...</span>
+    }
+    
+    // 2. Создание записи об отмене (отдельная операция)
+    using (var connection2 = new SqlConnection(connectionString)) {
+        connection2.Open();
+        var insertCancelCmd = new SqlCommand(
+            "INSERT INTO Cancellations (BookingId, CancelDate, Reason) VALUES (@bookingId, @date, @reason)", 
+            connection2);
+        insertCancelCmd.Parameters.AddWithValue("@bookingId", bookingId);
+        insertCancelCmd.Parameters.AddWithValue("@date", DateTime.Now);
+        insertCancelCmd.Parameters.AddWithValue("@reason", "User cancelled");
+        insertCancelCmd.ExecuteNonQuery();
+        <span class="code-danger">// ...этот код не выполнится</span>
+    }
+}
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 1: Использование транзакции БД</strong></p>
+                    <pre>
+public void CancelBooking(int bookingId) {
+    using (var connection = new SqlConnection(connectionString)) {
+        connection.Open();
+        
+        <span class="code-safe">// Начало транзакции</span>
+        using (var transaction = connection.BeginTransaction()) {
+            try {
+                // 1. Обновление статуса компьютера
+                var updateComputerCmd = new SqlCommand(
+                    "UPDATE Computers SET Status = 'available' WHERE Id = @computerId", 
+                    connection, transaction);
+                updateComputerCmd.Parameters.AddWithValue("@computerId", GetComputerId(bookingId));
+                updateComputerCmd.ExecuteNonQuery();
+                
+                // 2. Создание записи об отмене
+                var insertCancelCmd = new SqlCommand(
+                    "INSERT INTO Cancellations (BookingId, CancelDate, Reason) VALUES (@bookingId, @date, @reason)", 
+                    connection, transaction);
+                insertCancelCmd.Parameters.AddWithValue("@bookingId", bookingId);
+                insertCancelCmd.Parameters.AddWithValue("@date", DateTime.Now);
+                insertCancelCmd.Parameters.AddWithValue("@reason", "User cancelled");
+                insertCancelCmd.ExecuteNonQuery();
+                
+                <span class="code-safe">// Фиксация транзакции</span>
+                transaction.Commit();
+            }
+            catch (Exception ex) {
+                <span class="code-safe">// Откат транзакции при ошибке</span>
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+}
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 2: Транзакция через Entity Framework</strong></p>
+                    <pre>
+public void CancelBooking(int bookingId) {
+    using (var context = new BookingDbContext()) {
+        <span class="code-safe">// Начало транзакции</span>
+        using (var transaction = context.Database.BeginTransaction()) {
+            try {
+                // 1. Обновление статуса компьютера
+                var computerId = context.Bookings
+                    .Where(b => b.Id == bookingId)
+                    .Select(b => b.ComputerId)
+                    .FirstOrDefault();
+                    
+                var computer = context.Computers.Find(computerId);
+                if (computer != null) {
+                    computer.Status = "available";
+                }
+                
+                // 2. Создание записи об отмене
+                var cancellation = new Cancellation {
+                    BookingId = bookingId,
+                    CancelDate = DateTime.Now,
+                    Reason = "User cancelled"
+                };
+                context.Cancellations.Add(cancellation);
+                
+                <span class="code-safe">// Сохранение изменений и фиксация транзакции</span>
+                context.SaveChanges();
+                transaction.Commit();
+            }
+            catch (Exception ex) {
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+}
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 3: Паттерн Saga для распределенных транзакций</strong></p>
+                    <pre>
+// Используется в микросервисной архитектуре
+public async Task CancelBookingAsync(int bookingId) {
+    var saga = new CancelBookingSaga(bookingId);
+    
+    try {
+        // Шаг 1: Резервирование отмены
+        await saga.ReserveCancellationAsync();
+        
+        // Шаг 2: Освобождение компьютера
+        await saga.FreeComputerAsync();
+        
+        // Шаг 3: Фиксация отмены
+        await saga.ConfirmCancellationAsync();
+        
+        <span class="code-safe">// Все шаги успешны</span>
+        await saga.CompleteAsync();
+    }
+    catch (Exception ex) {
+        <span class="code-safe">// Компенсирующие транзакции</span>
+        await saga.CompensateAsync();
+        throw;
+    }
+}
+
+// Каждый шаг Saga имеет компенсирующую операцию
+public class CancelBookingSaga {
+    public async Task CompensateAsync() {
+        // Отмена всех выполненных шагов в обратном порядке
+        if (_cancellationReserved) await CompensateCancellationAsync();
+        if (_computerFreed) await CompensateComputerFreeAsync();
+    }
+}
+                    </pre>
+                </div>
+                
+                <div class="code-block">
+                    <p><strong>Решение 4: Использование Outbox Pattern</strong></p>
+                    <pre>
+public async Task CancelBookingAsync(int bookingId) {
+    using (var context = new BookingDbContext()) {
+        using (var transaction = await context.Database.BeginTransactionAsync()) {
+            try {
+                // 1. Обновление статуса компьютера
+                var computer = await GetComputerForBookingAsync(bookingId);
+                computer.Status = "available";
+                
+                // 2. Создание записи об отмене
+                var cancellation = new Cancellation { /* ... */ };
+                context.Cancellations.Add(cancellation);
+                
+                // 3. Запись события в Outbox в той же транзакции
+                var outboxMessage = new OutboxMessage {
+                    Type = "BookingCancelled",
+                    Data = JsonSerializer.Serialize(new {
+                        BookingId = bookingId,
+                        CancelledAt = DateTime.UtcNow
+                    }),
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.OutboxMessages.Add(outboxMessage);
+                
+                <span class="code-safe">// Все операции фиксируются вместе</span>
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex) {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+    }
+}
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p><i class="fab fa-github github-icon"></i> Дефект заведен в GitHub Issues | Шаблон отображения дефектов</p>
+</body>
+</html>
