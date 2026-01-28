@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Issues: Дефект #4 - Race Condition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f6f8fa;
+            color: #24292e;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #24292e 0%, #2c3136 100%);
+            color: white;
+            padding: 25px 30px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .issue-title h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .issue-id {
+            font-size: 20px;
+            font-weight: 600;
+            color: #79b8ff;
+            background-color: rgba(121, 184, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        .issue-meta {
+            margin-top: 15px;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+        
+        .severity-badge {
+            display: inline-block;
+            background-color: #b60205;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        .issue-body {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eaecef;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #24292e;
+            display: flex;
+            align-items: center;
+        }
+        
+        h2 i {
+            margin-right: 10px;
+            color: #0366d6;
+        }
+        
+        p, li {
+            margin-bottom: 10px;
+            color: #444d56;
+        }
+        
+        ul, ol {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .label {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .label-bug {
+            background-color: #d73a49;
+            color: white;
+        }
+        
+        .label-concurrency {
+            background-color: #0052cc;
+            color: white;
+        }
+        
+        .label-database {
+            background-color: #0366d6;
+            color: white;
+        }
+        
+        .label-priority-high {
+            background-color: #b60205;
+            color: white;
+        }
+        
+        .result-box {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .expected-result {
+            background-color: #e6ffed;
+            border-left: 4px solid #2ea44f;
+        }
+        
+        .actual-result {
+            background-color: #ffeef0;
+            border-left: 4px solid #d73a49;
+        }
+        
+        .result-box h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .result-box h3 i {
+            margin-right: 8px;
+        }
+        
+        .steps-list li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .steps-list li:before {
+            content: counter(step);
+            counter-increment: step;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #0366d6;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .steps-list {
+            counter-reset: step;
+        }
+        
+        .race-condition-demo {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f6f8fa;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+        }
+        
+        .process-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .process {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .process-title {
+            font-weight: 600;
+            color: #0366d6;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .process-title i {
+            margin-right: 8px;
+        }
+        
+        .balance-display {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #f6f8fa 0%, #eaecef 100%);
+            border-radius: 8px;
+            border: 2px dashed #d1d5da;
+        }
+        
+        .balance-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #24292e;
+        }
+        
+        .balance-label {
+            font-size: 14px;
+            color: #6a737d;
+            margin-top: 5px;
+        }
+        
+        .code-block {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        .race-scenario {
+            background-color: #fff5b1;
+            border-left: 4px solid #ff9c1a;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .race-scenario h3 {
+            color: #b60205;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .race-scenario h3 i {
+            margin-right: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #6a737d;
+            font-size: 14px;
+        }
+        
+        .github-icon {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                padding: 20px;
+            }
+            
+            .issue-title h1 {
+                font-size: 20px;
+            }
+            
+            .issue-body {
+                padding: 20px;
+            }
+            
+            .process {
+                min-width: 100%;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="issue-header">
+                <div class="issue-title">
+                    <h1>Race Condition при обновлении баланса клиента<span class="severity-badge">Critical</span></h1>
+                    <div class="issue-meta">
+                        <span><i class="fas fa-exclamation-circle"></i> Дефект заведен в GitHub Issues</span>
+                    </div>
+                </div>
+                <div class="issue-id">Issue #4</div>
+            </div>
+        </header>
+        
+        <div class="issue-body">
+            <div class="section">
+                <h2><i class="fas fa-align-left"></i> Описание</h2>
+                <p>При одновременных попытках пополнить баланс и списать средства возникает состояние гонки (race condition), приводящее к некорректному расчету остатка. Это критическая проблема, которая может привести к финансовым потерям и некорректной работе системы учета.</p>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-list-ol"></i> Шаги воспроизведения</h2>
+                <ol class="steps-list">
+                    <li>Создать клиента с начальным балансом 1000 руб.</li>
+                    <li>Запустить два параллельных процесса одновременно или с минимальной задержкой:
+                        <ul>
+                            <li><strong>Процесс A:</strong> пополнение баланса на 500 руб.</li>
+                            <li><strong>Процесс B:</strong> списание 800 руб. за услуги</li>
+                        </ul>
+                    </li>
+                    <li>Дождаться завершения обоих процессов.</li>
+                    <li>Проверить итоговый баланс клиента.</li>
+                </ol>
+                
+                <div class="balance-display">
+                    <div class="balance-label">Начальный баланс</div>
+                    <div class="balance-amount">1 000 ₽</div>
+                </div>
+                
+                <div class="process-flow">
+                    <div class="process">
+                        <div class="process-title"><i class="fas fa-plus-circle"></i> Процесс A: Пополнение</div>
+                        <p><strong>Действие:</strong> +500 руб.</p>
+                        <p><strong>Операция:</strong> UPDATE balance = balance + 500</p>
+                    </div>
+                    
+                    <div class="process">
+                        <div class="process-title"><i class="fas fa-minus-circle"></i> Процесс B: Списание</div>
+                        <p><strong>Действие:</strong> -800 руб.</p>
+                        <p><strong>Операция:</strong> UPDATE balance = balance - 800</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="race-scenario">
+                <h3><i class="fas fa-running"></i> Сценарий состояния гонки</h3>
+                <p><strong>Проблема:</strong> Оба процесса читают текущий баланс (1000 руб.) одновременно, затем оба выполняют свои вычисления независимо, и последний процесс перезаписывает изменения первого процесса.</p>
+                
+                <div class="code-block">
+                    // Пример уязвимого кода
+                    public void updateBalance(int clientId, int amount) {
+                        // 1. Чтение текущего баланса
+                        int currentBalance = getBalance(clientId); // 1000
+                        
+                        // 2. Вычисление нового баланса
+                        int newBalance = currentBalance + amount;
+                        
+                        // 3. Запись нового баланса
+                        setBalance(clientId, newBalance);
+                    }
+                    
+                    // При параллельном выполнении:
+                    // Процесс A: currentBalance = 1000, newBalance = 1500
+                    // Процесс B: currentBalance = 1000, newBalance = 200 (при списании 800)
+                    // Результат зависит от порядка записи!
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-bullseye"></i> Ожидаемый результат</h2>
+                <div class="result-box expected-result">
+                    <h3><i class="fas fa-check-circle"></i> Ожидаемый результат</h3>
+                    <p>Баланс = 1000 + 500 - 800 = 700 руб. Независимо от порядка выполнения операций, система должна обеспечить атомарность операций и корректный итоговый баланс.</p>
+                </div>
+                
+                <h2 style="margin-top: 25px;"><i class="fas fa-exclamation-triangle"></i> Фактический результат</h2>
+                <div class="result-box actual-result">
+                    <h3><i class="fas fa-times-circle"></i> Фактический результат</h3>
+                    <p>Баланс может быть 1200 руб. (если списание выполнилось первым) или 200 руб. (если пополнение выполнилось первым) в зависимости от порядка выполнения. В некоторых случаях возможны и другие некорректные значения.</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-search"></i> Root Cause</h2>
+                <p><strong>Отсутствие транзакционной блокировки на уровне базы данных.</strong> Операции чтения-модификации-записи выполняются без должной синхронизации, что приводит к классическому состоянию гонки при конкурентном доступе.</p>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-tags"></i> Метки (Labels)</h2>
+                <div class="labels">
+                    <span class="label label-bug"><i class="fas fa-bug"></i> bug</span>
+                    <span class="label label-concurrency"><i class="fas fa-random"></i> concurrency</span>
+                    <span class="label label-database"><i class="fas fa-database"></i> database</span>
+                    <span class="label label-priority-high"><i class="fas fa-exclamation"></i> priority-high</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-lightbulb"></i> Решения</h2>
+                <ul>
+                    <li><strong>Использование транзакций с уровнем изоляции SERIALIZABLE:</strong> Гарантирует последовательное выполнение операций.</li>
+                    <li><strong>Пессимистичные блокировки (SELECT FOR UPDATE):</strong> Блокировка строки на время транзакции.</li>
+                    <li><strong>Оптимистичные блокировки:</strong> Использование версионности (version column) для контроля изменений.</li>
+                    <li><strong>Атомарные UPDATE-запросы:</strong> Выполнение операции в одном SQL-запросе: <code>UPDATE accounts SET balance = balance + :amount WHERE id = :accountId</code></li>
+                    <li><strong>Очередь задач:</strong> Последовательная обработка операций над балансом через очередь.</li>
+                </ul>
+                
+                <div class="code-block" style="margin-top: 20px;">
+                    <p><strong>Пример исправления с использованием атомарного UPDATE:</strong></p>
+                    <pre>
+// Исправленный код с атомарной операцией
+public void updateBalance(int clientId, int amount) {
+    String sql = "UPDATE client_accounts SET balance = balance + ? WHERE id = ?";
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        pstmt.setInt(1, amount);
+        pstmt.setInt(2, clientId);
+        pstmt.executeUpdate();
+    }
+}
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p><i class="fab fa-github github-icon"></i> Дефект заведен в GitHub Issues | Шаблон отображения дефектов</p>
+    </footer>
+</body>
+</html>
